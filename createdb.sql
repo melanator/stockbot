@@ -21,7 +21,8 @@ CREATE TABLE transactions(
     ticker varchar(15),
     amount interger,
     price real,
-    stock varchar(5),
+    broker varchar(20),
+    margin real,
     holder_id interger,
     portfolio_id integer,
     date datetime);

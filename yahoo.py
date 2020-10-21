@@ -1,7 +1,6 @@
 import time
 import requests
 
-
 tickers = ['ENPG.ME','AFKS.ME','AFLT.ME','VTBR.ME','IRAO.ME','MTSS.ME','SBER.ME','FLOT.ME','ENRU.ME','AAPL']
 
 def get_json(tickers):
@@ -19,6 +18,7 @@ def main():
     for ticker in data_json:
         print(f'{ticker["symbol"]}: {ticker["regularMarketPrice"]} {ticker["currency"]}')
     print("YAHOO --- %s seconds ---" % (time.time() - start_time))
+
 
 if __name__ == '__main__':
     main()

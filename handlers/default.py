@@ -1,7 +1,7 @@
-import config
 import stock
-from ..misc import dp
+from misc import dp
 from aiogram import types
+
 
 @dp.message_handler(commands=['start'])
 async def start_bot(message: types.Message):

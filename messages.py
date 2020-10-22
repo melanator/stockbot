@@ -1,7 +1,7 @@
 def message_start(user):
     """Message of /start command"""
     message = f"Hi, {user.first_name}!\n"
-    message += 'To see your portfolios /portfolio\n'
+    message += 'To see your portfolios /portfolios\n'
     return message
 
 

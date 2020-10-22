@@ -16,6 +16,7 @@ CREATE TABLE shares(
     price real,
     stock varchar(5),
     holder_id integer,
+    currency varchar,
     portfolio_id integer);
 
 CREATE TABLE transactions(

@@ -1,15 +1,13 @@
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types
-from ..misc import dp
+from misc import dp, bot
 import stock
-
-storage = MemoryStorage()
+import messages
 
 
 # Bunch of handlers to create new paper.
-class Paper(StatesGroup):
+class PaperFSM(StatesGroup):
     portfolio = State()
     ticker = State()
     amount = State()
@@ -18,35 +16,37 @@ class Paper(StatesGroup):
 
 @dp.message_handler(commands=['newpaper'])
 async def new_paper(message: types.Message):
-    await Paper.portfolio.set()
-    await message.reply("Choose your portfolio or create new")
+    await PaperFSM.portfolio.set()
+    answer_message = 'Choose your portfolio or create new:\n'
+    answer_message += messages.message_portfolios(message.from_user, stock.fetch_portfolios(message.from_user))
+    await message.reply(answer_message)
 
 
-@dp.message_handler(state=Paper.portfolio)
+@dp.message_handler(state=PaperFSM.portfolio)
 async def paper_setportfolio_getticker(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['portfolio'] = message.text
-    await Paper.next()
+    await PaperFSM.next()
     await message.reply("Enter ticker of paper")
 
 
-@dp.message_handler(state=Paper.ticker)
+@dp.message_handler(state=PaperFSM.ticker)
 async def paper_setticker_getamount(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['ticker'] = message.text
-    await Paper.next()
+    await PaperFSM.next()
     await message.reply("Enter amount of papers")
 
 
-@dp.message_handler(state=Paper.amount)
+@dp.message_handler(state=PaperFSM.amount)
 async def paper_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['amount'] = message.text
-    await Paper.next()
+    await PaperFSM.next()
     await message.reply("Enter amount of papers")
 
 
-@dp.message_handler(state=Paper.price)
+@dp.message_handler(state=PaperFSM.price)
 async def portfolio_setprice_finishstates(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['price'] = message.text

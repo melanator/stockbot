@@ -17,23 +17,29 @@ def insert(table: str, column_values: Dict):
     conn.commit()
 
 
-def fetch(table: str, filters: List[Tuple]):
+def fetch(table: str, filters: List[Tuple], columns: List = None):
     """
     Fetch entries from table table with Tuple filters
     :param table: Searched table
     :param filters: List of Tuples (column, filter)
-    :return:
+    :param filters: List of columns to be fetched
     """
-    where_l = []
-    for pair in filters:
-        where_l.append(f'{pair[0]} = {pair[1]}')
-    where_str = ' and '.join(where_l)
-    query = f'SELECT * from {table} WHERE {where_str}'
-
+    columns_selected = ', '.join(columns) if columns is not None else '*'
+    where_str = ' and '.join([f'{pair[0]} = {pair[1]}' for pair in filters])
+    query = f'SELECT {columns_selected} from {table} WHERE {where_str}'
     cursor.execute(query)
-    rows = cursor.fetchall()
+    rows = cursor.fetchone()
     return rows
 
 
+def update(table: str, id: int, updates: List[Tuple]):
+    """Update entry in table where id = id"""
+    update_list = ', '.join([f'{x[0]} = ?' for x in updates])
+    placeholders = [x[1] for x in updates]
+    query = f'UPDATE {table} SET {update_list} WHERE id = {id}'
+    cursor.execute(query, placeholders)
+    conn.commit()
+
+
 if __name__ == '__main__':
-    print(fetch('holders', [('id', 227627486)]))
+    update('portfolios', 1, [('name', 'pizda')])

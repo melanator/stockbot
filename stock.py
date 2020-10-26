@@ -37,6 +37,16 @@ def create_portfolio(name: str, broker: str, margin: float, holder_id: int):
                                 'holder_id': holder_id})
 
 
-def create_paper():
-    pass
+def create_paper(ticker: str, amount: float, price: float, stock: str, currency: str, holder_id: int, portfolio_id: int):
+    query.insert('shares', {'ticker': ticker,
+                            'amount': amount,
+                            'price': price,
+                            'stock': stock,
+                            'currency': currency,
+                            'holder_id': holder_id,
+                            'portfolio_id': portfolio_id,})
+
+def get_portfolio_id(name):
+    return query.fetch('portfolios', [('name', '"'+name+'"')], ['id'])[0]
+
 

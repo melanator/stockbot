@@ -1,5 +1,6 @@
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher.filters import Text
 from aiogram import types
 from misc import dp, bot
 import stock
@@ -22,10 +23,23 @@ async def new_paper(message: types.Message):
     await message.reply(answer_message)
 
 
+# You can use state '*' if you need to handle all states
+@dp.message_handler(state='*', commands='cancel')
+@dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
+async def cancel_handler(message: types.Message, state: FSMContext):
+    """Allow user to cancel any action"""
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    # Cancel state and inform user about it
+    await state.finish()
+    await message.reply('Paper creating has been cancelled.')
+
+
 @dp.message_handler(state=PaperFSM.portfolio)
 async def paper_setportfolio_getticker(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['portfolio'] = message.text
+        data['portfolio'] = stock.get_portfolio_id(message.text)
     await PaperFSM.next()
     await message.reply("Enter ticker of paper")
 
@@ -52,11 +66,13 @@ async def portfolio_setprice_finishstates(message: types.Message, state: FSMCont
         data['price'] = message.text
 
         # Add entry
-        stock.create_portfolio(data['portfolio'],
-                               data['ticker'],
-                               data['amount'], 
-                               data['price'],
-                               message.from_user.id)
+        stock.create_paper(data['ticker'],
+                            data['amount'], 
+                            data['price'],
+                            data['stock'],
+                            data['currency'],
+                            message.from_user.id,
+                            data['portfolio'])
     await bot.send_message(message.chat.id,'Ticker has been added')
     # Finish conversation
     await state.finish()

@@ -2,6 +2,8 @@
 Models for databases
 """
 from typing import List
+import query
+import stock
 
 
 class Portfolio:
@@ -15,6 +17,11 @@ class Portfolio:
     def __str__(self):
         return f'{self.name} - {self.broker}'
 
+    def save(self):
+        """Update class to db"""
+        query.update('portfolios', self.id, 
+                    [('name', self.name), ('margin', self.margin), ('broker', self.broker)])
+
 
 class Paper:
     def __init__(self, query_result: List):
@@ -26,3 +33,11 @@ class Paper:
         self.currency = query_result[5],
         self.holder_id = query_result[6],
         self.portfolio_id = query_result[7]
+
+    def __str__(self):
+        return f'{self.ticker} - {self.amount} pcs. Price: {self.price}{self.stock}'
+
+    def save(self):
+        """Update class to db"""
+        query.update('shares', self.id, 
+                    [('ticker', self.ticker), ('amount', self.amount), ('stock', self.stock), ('currency', self.currency)])

@@ -22,7 +22,7 @@ def portfolios(user) -> List[Portfolio]:
     portfolios_classes = []
     for row in rows:
         portfolios_classes.append(Portfolio(row))
-    return messages.message_portfolios(user, portfolios_classes)
+    return portfolios_classes
 
 
 def fetch_portfolios(user):
@@ -46,7 +46,6 @@ def create_paper(ticker: str, amount: float, price: float, stock: str, currency:
                             'holder_id': holder_id,
                             'portfolio_id': portfolio_id,})
 
+
 def get_portfolio_id(name):
-    return query.fetch('portfolios', [('name', '"'+name+'"')], ['id'])[0]
-
-
+    print(query.fetch('portfolios', [('name', '"'+name+'"')], ['id']))

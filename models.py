@@ -22,6 +22,9 @@ class Portfolio:
         query.update('portfolios', self.id, 
                     [('name', self.name), ('margin', self.margin), ('broker', self.broker)])
 
+    def command(self):
+        return f'/{self.name}_{self.id}'
+
 
 class Paper:
     def __init__(self, query_result: List):

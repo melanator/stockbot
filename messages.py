@@ -11,7 +11,7 @@ def message_portfolios(user, portfolios):
     if len(portfolios) > 0:
         message += 'Your portfolios:\n'
         for row in portfolios:
-            message += f'{row}\n'
+            message += f'{row} {row.command()}\n'
     else:
         message += 'You have no portfolios\n'
     message += 'Create new /newportfolio\n'

@@ -22,13 +22,13 @@ def fetch(table: str, filters: List[Tuple], columns: List = None):
     Fetch entries from table table with Tuple filters
     :param table: Searched table
     :param filters: List of Tuples (column, filter)
-    :param filters: List of columns to be fetched
+    :param columns: List of columns to be fetched
     """
     columns_selected = ', '.join(columns) if columns is not None else '*'
     where_str = ' and '.join([f'{pair[0]} = {pair[1]}' for pair in filters])
     query = f'SELECT {columns_selected} from {table} WHERE {where_str}'
     cursor.execute(query)
-    rows = cursor.fetchone()
+    rows = cursor.fetchmany()
     return rows
 
 

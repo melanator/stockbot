@@ -6,9 +6,11 @@ import query
 
 
 class Portfolio:
-    def __init__(self, id=None):
-        if id is not None:
-            self.load(id)
+    papers = []
+
+    def __init__(self, port_id=None):
+        if port_id is not None:
+            self.load(port_id)
     
     def __str__(self):
         return f'{self.name} - {self.broker}'
@@ -21,13 +23,19 @@ class Portfolio:
         """Save class to db if no entries or update"""
         query.insert('portfolios', name=self.name, broker=self.broker, margin=self.margin, holder_id=self.holder_id)
 
-    def load(self, id):
+    def load(self, port_id):
         """Load class from db"""
-        data = query.fetch('portfolios', id=id)
-        self.id, self.name, self.holder_id, self.margin, self.broker = data
-      
+        columns = ['id', 'name', 'holder_id', 'margin', 'broker']
+        data = query.fetch('portfolios', columns=columns, id=port_id)
+        if len(data) == 1:
+            for col in columns:
+                setattr(self, col, data[0][col])
+            self.papers = [Paper(row['id']) for row in query.fetch('shares', ['id'], portfolio_id=self.id)]
+        else:
+            print('Found more then one entry')
+
     def command(self):
-        return f'/{self.name}_{self.id}'
+        return f'/port_{self.id}'
 
     def __is_in_db(self) -> bool:
         """Returns True if no entries in db"""
@@ -36,14 +44,24 @@ class Portfolio:
         except AttributeError:
             return False
 
+    def value(self):
+        """Value of portfolio"""
+        value = 0
+        for paper in self.papers:
+            value += paper.value()
+        return value
+
+    def commission(self):
+        """Return commission paid to broker"""
+        return self.value() * self.portfolio.margin
+
 
 class Paper:
     stock = '_blank'
 
-
-    def __init__(self, id=None):
-        if id is not None:
-            self.load(id)
+    def __init__(self, paper_id=None):
+        if paper_id is not None:
+            self.load(paper_id)
 
     def __str__(self):
         return f'{self.ticker} - {self.amount} pcs. Price: {self.price} {self.currency}'
@@ -58,7 +76,21 @@ class Paper:
         query.update('shares', self.id, 
                      ticker=self.ticker, amount=self.amount, stock=self.stock, currency=self.currency)
 
-    def load(self, id):
+    def load(self, paper_id):
         """Load class from db"""
-        data = query.fetch('shares', id=id)
-        self.id, self.ticker, self.amount, self.price, self.stock, self.currency, self.holder_id, self.portfolio_id = data
+        columns = ['id', 'ticker', 'amount', 'price', 'stock', 'currency', 'holder_id', 'portfolio_id']
+        data = query.fetch('shares', columns=columns, id=paper_id)
+        if len(data) == 1:
+            for col in columns:
+                setattr(self, col, data[0][col])
+            self.margin = query.fetch('portfolios', ['margin'], id=self.portfolio_id)[0]['margin']
+        else:
+            print('Found more then one entry')
+
+    def value(self):
+        """Return value of paper"""
+        return self.amount * self.price
+
+    def commission(self):
+        """Return commission paid to broker"""
+        return self.value() * self.portfolio.margin

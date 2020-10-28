@@ -11,25 +11,28 @@ def insert(table: str, **values_dict):
     """
     columns = ', '.join(values_dict.keys())
     values = [_ for _ in values_dict.values()]
-    placeholders = ", ".join( "?" * len(values_dict.keys()) )
-    cursor.execute(f"INSERT INTO {table} ({columns}) VALUES ({placeholders})", values)
+    placeholders = ", ".join("?" * len(values_dict.keys()))
+    query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+    cursor.execute(query, values)
     conn.commit()
 
 
-def fetch(table: str, columns: List = None, **filters):
+def fetch(table: str, columns: List[str] = None, **filters) -> List[Dict]:
     """
-    Fetch entries from table table with Tuple filters
+    Fetch entries from table table with Tuple filters and maps
     :param table: Searched table
-    :param **filters: Filters
+    :param filters: Filters
     :param columns: List of columns to be fetched
+    :return: List of Dicts {'column_name': value}
     """
     columns_selected = ', '.join(columns) if columns is not None else '*'
-    where_str = ' and '.join([f'{k} = ?' for k in filters.keys()])
+    where_str = 'WHERE '+' and '.join([f'{k} = ?' for k in filters.keys()]) if filters else ''
     values = [_ for _ in filters.values()]
-    query = f'SELECT {columns_selected} from {table} WHERE {where_str}'
+    query = f'SELECT {columns_selected} from {table} {where_str}'
     cursor.execute(query, values)
-    rows = cursor.fetchmany()
-    return rows
+    rows = cursor.fetchall()
+    names = [description[0] for description in cursor.description]  # Name of SQL columns
+    return [dict(zip(names, row)) for row in rows]
 
 
 def update(table: str, id: int, **updates):

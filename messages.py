@@ -1,3 +1,7 @@
+from typing import List
+from models import Portfolio
+
+
 def message_start(user):
     """Message of /start command"""
     message = f"Hi, {user.first_name}!\n"
@@ -5,7 +9,7 @@ def message_start(user):
     return message
 
 
-def message_portfolios(user, portfolios):
+def message_portfolios(user, portfolios: List[Portfolio]):
     """Message of /portfolios command"""
     message = ''
     if len(portfolios) > 0:

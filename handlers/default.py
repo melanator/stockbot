@@ -10,4 +10,4 @@ async def start_bot(message: types.Message):
 
 @dp.message_handler(commands=['portfolios'])
 async def show_portfolios(message: types.Message):
-    await message.reply(stock.portfolios(message.from_user))
+    await message.reply(stock.fetch_portfolios(message.from_user))

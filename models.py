@@ -3,6 +3,7 @@ Models for databases
 """
 from typing import List
 import query
+import yahoo
 
 
 class Portfolio:
@@ -55,10 +56,15 @@ class Portfolio:
         """Return commission paid to broker"""
         return self.value() * self.portfolio.margin
 
+    def current_prices(self):
+        """Get prices of all papers"""
+        tickers = [f'{paper.ticker}.{paper.stock}' if paper.stock == 'ME' else paper.ticker for paper in self.papers]
+        json = yahoo.get_json(tickers)
+        for paper, price in zip(self.papers, json):
+            paper.current_price = float(price['regularMarketPrice'])
+
 
 class Paper:
-    stock = '_blank'
-
     def __init__(self, paper_id=None):
         if paper_id is not None:
             self.load(paper_id)
@@ -94,3 +100,12 @@ class Paper:
     def commission(self):
         """Return commission paid to broker"""
         return self.value() * self.portfolio.margin
+
+    def get_current_price(self):
+        price = yahoo.get_json([f'{self.ticker}.{self.stock}' if self.stock == 'ME' else self.ticker])
+        self.current_price = float(price["regularMarketPrice"])
+
+    def change(self):
+        return round(self.current_price * self.amount - self.value(), 2)
+
+        

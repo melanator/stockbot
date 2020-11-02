@@ -28,9 +28,11 @@ def portfolios(user):
 def portfolio(portfolio_id):
     """Message of /port_*id* command"""
     message = 'Your papers\n'
-    papers = stock.get_portfolio_papers(portfolio_id)
-    for paper in papers:
-        message += f'{paper}\n'
+    port = Portfolio(portfolio_id)
+    port.current_prices()
+    for paper in port.papers:
+        message += f'{paper}\n' \
+                   f'{paper.change()} {paper.currency} ({paper.percent()}0%) \n\n'
 
     return message
 

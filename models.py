@@ -63,6 +63,12 @@ class Portfolio:
         for paper, price in zip(self.papers, json):
             paper.current_price = float(price['regularMarketPrice'])
 
+    def sum_papers_change(self):
+        pass
+
+    def portfolio_change(self):
+        pass
+
 
 class Paper:
     def __init__(self, paper_id=None):
@@ -108,4 +114,5 @@ class Paper:
     def change(self):
         return round(self.current_price * self.amount - self.value(), 2)
 
-        
+    def percent(self):
+        return round((self.current_price * self.amount - self.value()) * 100 / self.value(), 2)

@@ -4,6 +4,7 @@ Models for databases
 from typing import List
 import query
 import yahoo
+from aiogram.types import KeyboardButton
 
 
 class Portfolio:
@@ -115,4 +116,30 @@ class Paper:
         return round(self.current_price * self.amount - self.value(), 2)
 
     def percent(self):
-        return round((self.current_price * self.amount - self.value()) * 100 / self.value(), 2)
+        return round(self.change() * 100 / self.value(), 2)
+
+    def get_currency(self):
+        data = yahoo.get_json([f'{self.ticker}.{self.stock}' if self.stock == 'ME' else self.ticker])
+        self.currency = data[0]['currency']
+
+
+
+
+class Stock:
+    stock = ''
+    kb = KeyboardButton(stock)
+
+    def __init__(self, stock, symbol):
+        self.stock = stock
+        self.symbol = symbol
+        self.kb = KeyboardButton(stock)
+
+
+class Currency:
+    currency = ''
+    kb = KeyboardButton(currency)
+
+    def __init__(self, stock, currency):
+        self.stock = stock
+        self.currency = currency
+        self.kb = KeyboardButton(stock)

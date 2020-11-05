@@ -33,7 +33,6 @@ def portfolio(portfolio_id):
     for paper in port.papers:
         message += f'{paper}\n' \
                    f'{paper.change()} {paper.currency} ({paper.percent()}0%) \n\n'
-
     return message
 
 

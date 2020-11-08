@@ -44,5 +44,13 @@ def update(table: str, id: int, **updates):
     conn.commit()
 
 
+def delete(table: str, **filters):
+    where_str = 'WHERE ' + ' and '.join([f'{k} = ?' for k in filters.keys()]) if filters else ''
+    query = f'DELETE FROM {table} {where_str}'
+    placeholders = [x for x in filters.values()]
+    cursor.execute(query, placeholders)
+    conn.commit()
+
+
 if __name__ == '__main__':
     pass

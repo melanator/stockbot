@@ -5,6 +5,7 @@ from misc import dp, bot
 import stock
 import messages
 import yahoo
+import query
 from models import Paper
 import re
 import handlers.keyboard as kb
@@ -51,7 +52,7 @@ async def paper_setportfolio_getstock(message: types.Message, state: FSMContext)
     await PaperFSM.next()
     if stock.is_user_holds_portfolio(new_paper.holder_id, new_paper.portfolio_id):
         await bot.send_message(message.chat.id,
-                               "Portfolio selected.\nChoose stock", reply_markup=kb.stock_kb.add(kb.cancel_kb))
+                               "Portfolio selected.\nChoose stock", reply_markup=kb.stock_kb)
     else:
         await message.reply("Choose YOUR portfolio")
 
@@ -77,7 +78,7 @@ async def noticker_on_yahoo(message: types.Message):
 @dp.message_handler(state=PaperFSM.ticker)
 async def paper_setticker_getamount(message: types.Message, state: FSMContext):
     new_paper.ticker = message.text.upper()
-    new_paper.get_currency()
+    new_paper.get_yahoo()  # Load data from yahoo to fetch currency
     await PaperFSM.next()
     await bot.send_message(message.chat.id, "Enter amount of papers",
                            reply_markup=cancel_b)
@@ -86,7 +87,7 @@ async def paper_setticker_getamount(message: types.Message, state: FSMContext):
 """ Setting price """
 @dp.message_handler(filters.Regexp(regexp='^-?\d+(?:\.\d+)?$'), state=PaperFSM.amount)
 async def paper_setamount_getprice(message: types.Message, state: FSMContext):
-    new_paper.amount = message.text
+    new_paper.amount = int(message.text)
     await PaperFSM.next()
     await bot.send_message(message.chat.id, "Enter price of papers",
                            reply_markup=cancel_b)
@@ -94,8 +95,11 @@ async def paper_setamount_getprice(message: types.Message, state: FSMContext):
 
 """ Finish FSM, save object to DB """
 @dp.message_handler(state=PaperFSM.price)
-async def portfolio_setcurrency_finishmachine(message: types.Message, state: FSMContext):
-    new_paper.price = message.text
+async def portfolio_setprice_finishmachine(message: types.Message, state: FSMContext):
+    new_paper.price = float(message.text)
+    new_paper.margin = query.fetch('portfolios', ['margin'], id=new_paper.portfolio_id)[0]['margin']
+    new_paper.set_commission()
+    new_paper.add_transaction(new_paper.amount, new_paper.price, new_paper.commission)
     new_paper.save()
     await bot.send_message(message.chat.id, f'Paper has been added to your portfolio\n{new_paper}',
                            reply_markup=types.ReplyKeyboardRemove())

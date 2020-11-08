@@ -5,6 +5,7 @@ from typing import List
 import query
 import yahoo
 from aiogram.types import KeyboardButton
+import datetime
 
 
 class Portfolio:
@@ -53,45 +54,58 @@ class Portfolio:
             value += paper.value()
         return value
 
-    def commission(self):
-        """Return commission paid to broker"""
-        return self.value() * self.portfolio.margin
+    def count_papers(self):
+        return len(query.fetch('shares', ['id'], portfolio_id=self.id))
 
     def current_prices(self):
         """Get prices of all papers"""
         tickers = [f'{paper.ticker}.{paper.stock}' if paper.stock == 'ME' else paper.ticker for paper in self.papers]
         json = yahoo.get_json(tickers)
+        self.current_value = 0
         for paper, price in zip(self.papers, json):
-            paper.current_price = float(price['regularMarketPrice'])
+            paper.set_vars(price)
+            self.current_value += paper.current_value()
+        self.current_value = round(self.current_value, 2)
 
-    def sum_papers_change(self):
-        pass
+    def change(self):
+        return round(self.current_value - self.value(), 2)
 
-    def portfolio_change(self):
-        pass
+    def percent(self):
+        return round(self.change() / self.value() * 100, 1)
 
 
 class Paper:
-    def __init__(self, paper_id=None):
+    commission = 0
+
+    def __init__(self, paper_id=None, **kwargs):
         if paper_id is not None:
             self.load(paper_id)
+        else:
+            try:
+                self.ticker = kwargs['ticker'].upper()
+                self.stock = kwargs['stock'].upper()
+            except KeyError:
+                pass
 
     def __str__(self):
-        return f'{self.ticker} - {self.amount} pcs. Price: {self.price} {self.currency}'
+        return f'{self.ticker}: {self.amount}. {self.command()}\n' \
+               f'Price: {self.price} {self.currency}'
 
     def save(self):
         """Save class to db if no entries or update"""
         query.insert('shares', ticker=self.ticker, amount=self.amount, price=self.price, 
-                     stock=self.stock, currency=self.currency, holder_id=self.holder_id, portfolio_id=self.portfolio_id)
+                     stock=self.stock, currency=self.currency, holder_id=self.holder_id, portfolio_id=self.portfolio_id,
+                     commission=self.commission)
     
     def update(self):
         """Update class to db"""
         query.update('shares', self.id, 
-                     ticker=self.ticker, amount=self.amount, stock=self.stock, currency=self.currency)
+                     ticker=self.ticker, amount=self.amount, stock=self.stock, currency=self.currency, price=self.price,
+                     commission=self.commission)
 
     def load(self, paper_id):
         """Load class from db"""
-        columns = ['id', 'ticker', 'amount', 'price', 'stock', 'currency', 'holder_id', 'portfolio_id']
+        columns = ['id', 'ticker', 'amount', 'price', 'stock', 'currency', 'holder_id', 'portfolio_id', 'commission']
         data = query.fetch('shares', columns=columns, id=paper_id)
         if len(data) == 1:
             for col in columns:
@@ -100,29 +114,78 @@ class Paper:
         else:
             print('Found more then one entry')
 
+    def delete(self):
+        """Deletes from db"""
+        query.delete('shares', id=self.id)
+
     def value(self):
         """Return value of paper"""
         return self.amount * self.price
 
-    def commission(self):
-        """Return commission paid to broker"""
-        return self.value() * self.portfolio.margin
+    def current_value(self):
+        return self.amount * self.current_price
 
-    def get_current_price(self):
-        price = yahoo.get_json([f'{self.ticker}.{self.stock}' if self.stock == 'ME' else self.ticker])
-        self.current_price = float(price["regularMarketPrice"])
+    def get_yahoo(self):
+        """ Gets JSON from YAHOO API"""
+        price = yahoo.get_json([self.yahoo_ticker()])
+        self.data = price[0]
+        self.set_vars(self.data)
+
+    def set_vars(self, data):
+        """Maps variables from data JSON to separated important variables"""
+        self.current_price = float(data['regularMarketPrice'])
+        self.currency = data['currency']
+        self.day_change = data['regularMarketChange']
+        self.day_change_per = data['regularMarketChangePercent']
+        self.name = data['shortName']
+        self.market_state = data['marketState']
 
     def change(self):
-        return round(self.current_price * self.amount - self.value(), 2)
+        return round(self.current_value() - self.value(), 1)
 
     def percent(self):
-        return round(self.change() * 100 / self.value(), 2)
+        return round(self.change() / self.value() * 100, 1)
 
-    def get_currency(self):
-        data = yahoo.get_json([f'{self.ticker}.{self.stock}' if self.stock == 'ME' else self.ticker])
-        self.currency = data[0]['currency']
+    def yahoo_ticker(self):
+        return self.ticker if self.stock == 'NSDQ' else f'{self.ticker}.{self.stock}'
 
+    def market(self):
+        return f'Market price: {self.current_price} {self.currency} ' \
+               f'{round(self.day_change, 2)} ({round(self.day_change_per, 2)})'
 
+    def command(self):
+        return f'/{self.ticker}_{self.portfolio_id}'
+
+    def add_shares(self, amount, price):
+        new_value = self.value() + amount * price
+        self.amount += amount
+        self.price = new_value / self.amount
+        self.add_transaction(amount, price, self.update_commission(amount, price))
+        self.update()
+
+    def sell_shares(self, amount, price):
+        self.amount -= amount
+        self.add_transaction(-amount, price, self.update_commission(amount, price))
+        self.update()
+
+    def sell_all(self, price):
+        self.add_transaction(-self.amount, price, self.update_commission(self.amount, price))
+        # Add transaction
+        pass
+
+    def set_commission(self):
+        """Sets commission paid to broker"""
+        self.commission = self.value() * self.margin * 0.01
+
+    def update_commission(self, amount, price):
+        """ Adds new commission to already paid commission of this paper AND return commission of operation """
+        self.commission += amount * price * self.margin * 0.01
+        return amount * price * self.margin * 0.01
+
+    def add_transaction(self, amount, price, commission):
+        query.insert('transactions', ticker=self.ticker, amount=amount, price=price,
+                     commission=commission, holder_id=self.holder_id, portfolio_id=self.portfolio_id,
+                     share_id=self.id, date=datetime.datetime.utcnow())
 
 
 class Stock:

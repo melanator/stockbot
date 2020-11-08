@@ -31,3 +31,10 @@ def is_user_holds_portfolio(user_id: int, portfolio_id: int) -> bool:
 
 def get_portfolio_papers(portfolio_id: int):
     return [Paper(row['id']) for row in query.fetch('shares', ['id'], portfolio_id=portfolio_id)]
+
+
+def get_paper(ticker: str, portfolio_id: int, holder_id: int) -> Paper:
+    try:
+        return Paper(query.fetch('shares', ['id'], ticker=ticker, holder_id=holder_id, portfolio_id=portfolio_id)[0]['id'])
+    except IndexError:
+        return

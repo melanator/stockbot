@@ -20,8 +20,6 @@ class PaperFSM(StatesGroup):
     price = State()
 
 
-cancel_b = types.ReplyKeyboardMarkup(resize_keyboard=True).add(kb.cancel_kb)
-
 """ New instance of Paper() class to save data """
 new_paper = Paper()
 
@@ -31,14 +29,14 @@ async def newpaper(message: types.Message):
     await PaperFSM.portfolio.set()
     answer_message = 'Choose your portfolio or create new:\nAvoid messages with /\n'
     answer_message += messages.portfolios(message.from_user)
-    await bot.send_message(message.chat.id, answer_message, reply_markup=cancel_b)
+    await bot.send_message(message.chat.id, answer_message, reply_markup=kb.cancel_kb)
 
 
 """ When choosing portfolio message doesn't start with /port """
 @dp.message_handler(lambda message: not message.text.startswith('/port_'), state=PaperFSM.portfolio)
 async def wrong_input(message: types.Message):
     return await message.reply("Choose portfolio by clicking on /port_ command",
-                               reply_markup=cancel_b)
+                               reply_markup=kb.cancel_kb)
 
 
 """
@@ -63,7 +61,7 @@ async def paper_setportfolio_getticker(message: types.Message, state: FSMContext
     if message.text in kb.stocks_dict.keys():
         new_paper.stock = kb.stocks_dict[message.text]
         await PaperFSM.next()
-        await bot.send_message(message.chat.id, "Enter ticker of paper", reply_markup=cancel_b)
+        await bot.send_message(message.chat.id, "Enter ticker of paper", reply_markup=kb.cancel_kb)
     else:
         await message.reply("Stock not found", reply_markup=kb.stock_kb)
 
@@ -71,7 +69,7 @@ async def paper_setportfolio_getticker(message: types.Message, state: FSMContext
 """ Checking is ticker on YAHOO """
 @dp.message_handler(lambda message: not yahoo.find_ticker(message.text.upper(), new_paper.stock), state=PaperFSM.ticker)
 async def noticker_on_yahoo(message: types.Message):
-    return await message.reply("Ticker not found", reply_markup=cancel_b)
+    return await message.reply("Ticker not found", reply_markup=kb.cancel_kb)
 
 
 """ Setting amount """
@@ -81,7 +79,7 @@ async def paper_setticker_getamount(message: types.Message, state: FSMContext):
     new_paper.get_yahoo()  # Load data from yahoo to fetch currency
     await PaperFSM.next()
     await bot.send_message(message.chat.id, "Enter amount of papers",
-                           reply_markup=cancel_b)
+                           reply_markup=kb.cancel_kb)
 
 
 """ Setting price """
@@ -90,7 +88,7 @@ async def paper_setamount_getprice(message: types.Message, state: FSMContext):
     new_paper.amount = int(message.text)
     await PaperFSM.next()
     await bot.send_message(message.chat.id, "Enter price of papers",
-                           reply_markup=cancel_b)
+                           reply_markup=kb.cancel_kb)
 
 
 """ Finish FSM, save object to DB """

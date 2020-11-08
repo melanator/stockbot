@@ -27,6 +27,8 @@ def portfolios(user):
     else:
         message += 'You have no portfolios\n'
     message += 'Create new /newportfolio\n'
+    print(message)
+    print(type(message))
     return message
 
 
